@@ -42,7 +42,8 @@ npm run setup
 
 `npm run setup` installs the Node packages (including a static ffmpeg),
 Playwright's Chromium, and Kokoro in `./.venv`, then downloads the voice model
-(~330 MB, stored in `~/.cache/huggingface`).
+(~330 MB, stored in `~/.cache/huggingface`) and the word aligner model used by
+the studio (~1.2 GB, stored in `~/.cache/torch`).
 
 ## Try it
 
@@ -164,7 +165,7 @@ The storyboard is `demos/<name>/edit.json`:
 
 | Scene | What it shows |
 |---|---|
-| `kinetic` | `phrases` one after another, word by word, over voice clip `vo` |
+| `kinetic` | `phrases` one after another, over voice clip `vo`. Each word appears the moment it is spoken, so phrases must use the clip's words, in order |
 | `screen` | recorded `stage` (optionally `from`/`to` seconds) in a floating window. `focus` zooms to marks, `clicks` draws the cursor clicking them |
 | `outro` | brand mark, `theme.brand` and `theme.url` |
 
@@ -243,6 +244,7 @@ scripts/voice.py       narration.json → Kokoro clips + index.json
 scripts/assemble.mjs   frames + clips + cards → mp4
 scripts/run.mjs        runs voice → record → assemble
 studio/                Remotion project: polish.mjs + reusable components
+aligner/               word timing for voice clips (forced alignment, runs in .venv)
 demos/example/         tour of playwright.dev (desktop + phone)
 demos/google/          Google search: home page, typing, suggestions
 setup.sh               one-time install

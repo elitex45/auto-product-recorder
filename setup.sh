@@ -26,4 +26,6 @@ fi
 
 echo "== Pre-download the Kokoro voice model (~330 MB, once)"
 .venv/bin/python -c "from kokoro import KPipeline; KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')" 2>/dev/null
+echo "== Pre-download the word aligner model (~1.2 GB, once; used by npm run polish)"
+.venv/bin/python -c "import torchaudio; torchaudio.pipelines.MMS_FA.get_model()" 2>/dev/null
 echo "Done. Try: npm run demo -- demos/example"

@@ -16,6 +16,9 @@ export type Theme = {
   url?: string;
 };
 
+/** One word of a voice clip and when it is spoken (seconds from the clip start). From the aligner. */
+export type SpokenWord = { w: string; t0: number; t1: number };
+
 export type Box = { x: number; y: number; width: number; height: number };
 /** Where an element was on screen, and when (ms since the stage started). Written by rec.mark(). */
 export type Mark = { id: string; t: number; box: Box };
@@ -34,7 +37,10 @@ export type Stage = {
 /** Big words on the background, phrase by phrase, over one voice clip. */
 export type KineticScene = {
   type: "kinetic";
-  /** Each phrase gets an equal share of the scene; words arrive one by one. */
+  /**
+   * Words from the voice clip, in spoken order (you may skip words).
+   * Each word appears the moment it is spoken; each phrase replaces the previous one.
+   */
   phrases: string[];
   /** Beat id of the voice clip to play. */
   vo?: string;
@@ -77,6 +83,6 @@ export type Edit = {
 export type PromoProps = {
   edit: Edit;
   stages: Record<string, Stage>;
-  /** Voice clips: beat id -> { src under public/, ms }. */
-  vo: Record<string, { src: string; ms: number }>;
+  /** Voice clips: beat id -> { src under public/, ms, words: when each word is spoken }. */
+  vo: Record<string, { src: string; ms: number; words?: SpokenWord[] }>;
 };

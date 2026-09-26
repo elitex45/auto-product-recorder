@@ -5,7 +5,7 @@ import { KineticText } from "./components/KineticText";
 import { LogoOutro } from "./components/LogoOutro";
 import { SceneShell } from "./components/SceneShell";
 import { ScreenClip } from "./components/ScreenClip";
-import { EDGE, sceneFrames, screenRange } from "./timing";
+import { EDGE, VO_DELAY, sceneFrames, screenRange } from "./timing";
 import type { PromoProps, Scene } from "./types";
 
 // Inter (OFL), bundled in public/fonts so renders never depend on the network.
@@ -50,7 +50,7 @@ const SceneBody: React.FC<{ scene: Scene; props: PromoProps }> = ({ scene, props
   const theme = props.edit.theme;
   switch (scene.type) {
     case "kinetic":
-      return <KineticText phrases={scene.phrases} theme={theme} />;
+      return <KineticText phrases={scene.phrases} words={scene.vo ? props.vo[scene.vo]?.words : undefined} theme={theme} />;
     case "screen": {
       const { stage, from, to } = screenRange(scene, props);
       return <ScreenClip scene={scene} stage={stage} from={from} to={to} theme={theme} />;
@@ -65,7 +65,7 @@ const Voice: React.FC<{ id: string; props: PromoProps }> = ({ id, props }) => {
   const clip = props.vo[id];
   if (!clip) throw new Error(`edit.json: no voice clip "${id}" (is it in narration.json?)`);
   return (
-    <Sequence from={6} layout="none">
+    <Sequence from={VO_DELAY} layout="none">
       <Audio src={staticFile(clip.src)} />
     </Sequence>
   );

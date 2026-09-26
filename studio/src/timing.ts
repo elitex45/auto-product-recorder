@@ -4,6 +4,9 @@ export const FPS = 30;
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
 
+/** A scene's voice clip starts this many frames into the scene. */
+export const VO_DELAY = 6;
+
 /** Frames every scene spends fading in and out (see SceneShell). */
 export const EDGE = 10;
 

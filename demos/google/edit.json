@@ -10,26 +10,73 @@
     "url": "google.com"
   },
   "scenes": [
-    { "type": "kinetic", "vo": "t0", "phrases": ["A quick look at", "Google search", "Voice by Kokoro"] },
+    {
+      "type": "kinetic",
+      "vo": "t0",
+      "phrases": [
+        "A quick look at",
+        "how Google search works",
+        "Kokoro is doing the talking"
+      ]
+    },
     {
       "type": "screen",
       "stage": "desktop",
       "title": "Ask anything",
       "focus": [
-        { "mark": "search-box", "scale": 1.7, "lead": 1.0 },
-        { "mark": "suggestions", "scale": 1.5, "lead": 0.6 },
-        { "mark": "picked", "scale": 2.6, "lead": 2.6 }
+        {
+          "mark": "search-box",
+          "scale": 1.7,
+          "lead": 1.0
+        },
+        {
+          "mark": "suggestions",
+          "scale": 1.5,
+          "lead": 0.6
+        },
+        {
+          "mark": "picked",
+          "scale": 2.6,
+          "lead": 2.6
+        }
       ],
-      "clicks": ["search-box"]
+      "clicks": [
+        "search-box"
+      ]
     },
-    { "type": "kinetic", "vo": "t2", "phrases": ["Same search.", "On a phone."] },
+    {
+      "type": "kinetic",
+      "vo": "t2",
+      "phrases": [
+        "The same search",
+        "on a phone."
+      ]
+    },
     {
       "type": "screen",
       "stage": "mobile",
-      "focus": [{ "mark": "suggestions", "scale": 1.15, "lead": 0.8 }],
-      "clicks": ["search-box"]
+      "focus": [
+        {
+          "mark": "suggestions",
+          "scale": 1.15,
+          "lead": 0.8
+        }
+      ],
+      "clicks": [
+        "search-box"
+      ]
     },
-    { "type": "kinetic", "vo": "t9", "phrases": ["Start typing.", "Google finishes the thought."] },
-    { "type": "outro", "seconds": 3.2 }
+    {
+      "type": "kinetic",
+      "vo": "t9",
+      "phrases": [
+        "Start typing,",
+        "it helps you finish the question."
+      ]
+    },
+    {
+      "type": "outro",
+      "seconds": 3.2
+    }
   ]
 }

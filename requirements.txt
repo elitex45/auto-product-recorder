@@ -1,4 +1,8 @@
 kokoro>=0.9.4
 soundfile
+# Word-timing aligner (aligner/sync): forced_align + MMS_FA. torchaudio must match torch's version.
+torch==2.11.0
+torchaudio==2.11.0
+numpy
 # English model misaki loads on first run; pinned here so it is not fetched mid-run
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
