@@ -48,19 +48,23 @@ test.describe("desktop", () => {
     });
     await rec.beat("d2", async () => {
       await hold(1200);
+      await rec.mark("search-box", searchBox(page));
       await searchBox(page).hover();
       await hold(500);
       await typeQuestion(page);
     });
     await rec.beat("d3", async () => {
       await expect(suggestions(page).first()).toBeVisible({ timeout: 10_000 });
-      await hold(1000);
+      await hold(300);
+      await rec.mark("suggestions", page.getByRole("listbox").first());
+      await hold(700);
     });
     await rec.beat("d4", async () => {
       for (let i = 0; i < 3; i++) {
         await page.keyboard.press("ArrowDown");
         await hold(900);
       }
+      await rec.mark("picked", suggestions(page).nth(2));
     });
     await expect(page.getByText(/unusual traffic/i)).toHaveCount(0);
     await rec.stop();
@@ -80,11 +84,14 @@ test.describe("mobile", () => {
       await hold(1500);
     });
     await rec.beat("m2", async () => {
+      await rec.mark("search-box", searchBox(page));
       await searchBox(page).tap();
       await hold(600);
       await searchBox(page).pressSequentially(QUESTION, { delay: 90 });
       await expect(suggestions(page).first()).toBeVisible({ timeout: 10_000 });
-      await hold(1200);
+      await hold(300);
+      await rec.mark("suggestions", page.getByRole("listbox").first());
+      await hold(900);
     });
     await expect(page.getByText(/unusual traffic/i)).toHaveCount(0);
     await rec.stop();

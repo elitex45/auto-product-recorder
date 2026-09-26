@@ -133,6 +133,55 @@ Then run it:
 npm run demo -- demos/my-product
 ```
 
+## Make it a polished promo (studio)
+
+The plain video is step one. `studio/` turns the same recording into a
+SaaS-style promo: big words that arrive one by one, the product in a floating
+3D browser or phone, the camera zooming to what matters, a drawn cursor that
+clicks, and a logo ending. It uses [Remotion](https://www.remotion.dev)
+(React components rendered to video) and keeps the Kokoro voice.
+
+```bash
+npm run demo   -- demos/google     # record first (plain video)
+npm run polish -- demos/google     # → demos/google/google-search-promo.mp4
+```
+
+The storyboard is `demos/<name>/edit.json`:
+
+```json
+{
+  "output": "my-product-promo.mp4",
+  "theme": { "accent": "#1a73e8", "accent2": "#34a8ff", "bg": "#f6f8fc", "ink": "#0b1426",
+             "muted": "#6b7280", "brand": "My Product", "url": "myproduct.com" },
+  "scenes": [
+    { "type": "kinetic", "vo": "t0", "phrases": ["Meet", "My Product"] },
+    { "type": "screen", "stage": "desktop", "title": "Ask anything",
+      "focus": [{ "mark": "search-box", "scale": 1.7 }], "clicks": ["search-box"] },
+    { "type": "outro", "seconds": 3 }
+  ]
+}
+```
+
+| Scene | What it shows |
+|---|---|
+| `kinetic` | `phrases` one after another, word by word, over voice clip `vo` |
+| `screen` | recorded `stage` (optionally `from`/`to` seconds) in a floating window. `focus` zooms to marks, `clicks` draws the cursor clicking them |
+| `outro` | brand mark, `theme.brand` and `theme.url` |
+
+Zooms and clicks need to know where things were, so mark them in the spec
+right before the action:
+
+```ts
+await rec.mark("search-box", page.locator("textarea[name=q]"));
+await page.locator("textarea[name=q]").click();
+```
+
+`cd studio && npm run preview` opens Remotion's editor to scrub through a
+render; components live in `studio/src/components/`.
+
+**License note:** Remotion is free for individuals and companies of up to 3
+people; bigger companies need a [company license](https://www.remotion.pro).
+
 ## Run one step at a time
 
 ```bash
@@ -193,6 +242,7 @@ lib/recorder.ts        Recorder class + hold / settle / scrollTo helpers
 scripts/voice.py       narration.json → Kokoro clips + index.json
 scripts/assemble.mjs   frames + clips + cards → mp4
 scripts/run.mjs        runs voice → record → assemble
+studio/                Remotion project: polish.mjs + reusable components
 demos/example/         tour of playwright.dev (desktop + phone)
 demos/google/          Google search: home page, typing, suggestions
 setup.sh               one-time install

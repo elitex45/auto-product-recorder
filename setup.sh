@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 echo "== Node packages"
 npm install
 npx playwright install chromium
+npm --prefix studio install
 
 echo "== Python 3.12 + Kokoro (in .venv)"
 if command -v uv >/dev/null; then

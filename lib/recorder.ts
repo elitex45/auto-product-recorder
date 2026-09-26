@@ -8,11 +8,14 @@
  *   await rec.stop();
  *
  * Frames go to $DEMO_DIR/frames/<stage>/NNNNNN.jpg plus frames.json
- * ({ frames: [ms…], beats: [{id,start,audio,end}], total }), which assemble.mjs reads.
+ * ({ frames: [ms…], beats: [{id,start,audio,end}], marks: [...], viewport, total }), which
+ * assemble.mjs and the studio read.
+ *
+ *   await rec.mark("search-box", locator);   // where an element is, and when (for zooms and the cursor)
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { CDPSession, Page } from "@playwright/test";
+import type { CDPSession, Locator, Page } from "@playwright/test";
 
 export const DEMO_DIR = path.resolve(process.env.DEMO_DIR ?? ".");
 
@@ -33,6 +36,8 @@ export class Recorder {
   private n = 0;
   private frames: number[] = [];
   private beats: { id: string; start: number; audio: number; end: number }[] = [];
+  private marks: { id: string; t: number; box: { x: number; y: number; width: number; height: number } }[] = [];
+  private viewport = { width: 0, height: 0, dpr: 1 };
   private audio = loadAudioIndex();
   readonly dir: string;
 
@@ -54,6 +59,7 @@ export class Recorder {
     });
     const vp = page.viewportSize() ?? { width: 1920, height: 1080 };
     const dpr = await page.evaluate(() => window.devicePixelRatio);
+    this.viewport = { ...vp, dpr };
     await this.cdp.send("Page.startScreencast", {
       format: "jpeg",
       quality: 92,
@@ -75,13 +81,29 @@ export class Recorder {
     this.beats.push({ id, start, audio, end: Date.now() - this.t0 });
   }
 
+  /**
+   * Remember where `target` is on screen right now (CSS px, relative to the viewport).
+   * The studio zooms to marks and moves its cursor to them. Call it just before a click.
+   */
+  async mark(id: string, target: Locator) {
+    const box = await target.boundingBox();
+    if (!box) throw new Error(`mark "${id}": element is not visible`);
+    this.marks.push({ id, t: Date.now() - this.t0, box });
+  }
+
   async stop() {
     await hold(400);
     await this.cdp.send("Page.stopScreencast").catch(() => undefined);
     await hold(200);
     fs.writeFileSync(
       path.join(this.dir, "frames.json"),
-      JSON.stringify({ frames: this.frames, beats: this.beats, total: Date.now() - this.t0 }),
+      JSON.stringify({
+        frames: this.frames,
+        beats: this.beats,
+        marks: this.marks,
+        viewport: this.viewport,
+        total: Date.now() - this.t0,
+      }),
     );
   }
 }

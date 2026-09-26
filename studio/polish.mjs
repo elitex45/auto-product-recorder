@@ -1,0 +1,52 @@
+// Turn a recorded demo into a polished promo.
+// usage: node studio/polish.mjs <demo dir>      (after `npm run demo -- <demo dir>`)
+// Reads <demo dir>/edit.json (the storyboard), the recorded stages and the voice clips,
+// renders with Remotion, writes <demo dir>/<output from edit.json, default "<name>-promo.mp4">.
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+
+const STUDIO = path.dirname(new URL(import.meta.url).pathname);
+const demo = path.resolve(process.argv[2] ?? "");
+const editFile = path.join(demo, "edit.json");
+if (!fs.existsSync(editFile)) {
+  console.error(`${editFile} not found.\nusage: npm run polish -- <demo dir>   (e.g. demos/google)`);
+  process.exit(1);
+}
+const edit = JSON.parse(fs.readFileSync(editFile, "utf8"));
+const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
+
+// Stage assets go under studio/public/_demo so Remotion can serve them.
+const pub = path.join(STUDIO, "public", "_demo");
+fs.rmSync(pub, { recursive: true, force: true });
+fs.mkdirSync(path.join(pub, "audio"), { recursive: true });
+
+const stages = {};
+for (const name of new Set(edit.scenes.filter((s) => s.type === "screen").map((s) => s.stage))) {
+  const meta = readJson(path.join(demo, "frames", name, "frames.json"));
+  const build = path.join(demo, "build");
+  const video = fs.existsSync(build) && fs.readdirSync(build).find((f) => f.endsWith(`-stage-${name}.mp4`));
+  if (!video) throw new Error(`no stage video for "${name}" in ${build}; run: npm run demo -- ${path.relative(process.cwd(), demo)}`);
+  if (!meta.viewport) throw new Error(`${name}/frames.json has no viewport; re-record with the current recorder`);
+  fs.copyFileSync(path.join(build, video), path.join(pub, `${name}.mp4`));
+  stages[name] = { src: `_demo/${name}.mp4`, viewport: meta.viewport, marks: meta.marks ?? [], beats: meta.beats, total: meta.total };
+}
+
+const index = readJson(path.join(demo, "audio", "index.json"));
+const vo = {};
+for (const id of edit.scenes.map((s) => s.vo).filter(Boolean)) {
+  if (!(id in index)) throw new Error(`edit.json uses voice "${id}" but narration.json has no such beat`);
+  fs.copyFileSync(path.join(demo, "audio", `${id}.wav`), path.join(pub, "audio", `${id}.wav`));
+  vo[id] = { src: `_demo/audio/${id}.wav`, ms: index[id] };
+}
+
+const propsFile = path.join(demo, "build", "promo-props.json");
+fs.mkdirSync(path.dirname(propsFile), { recursive: true });
+fs.writeFileSync(propsFile, JSON.stringify({ edit, stages, vo }, null, 1));
+const out = path.join(demo, edit.output ?? `${path.basename(demo)}-promo.mp4`);
+const r = spawnSync("npx", ["remotion", "render", "src/index.ts", "Promo", out, `--props=${propsFile}`, "--log=warn"], {
+  cwd: STUDIO,
+  stdio: "inherit",
+});
+if (r.status !== 0) process.exit(r.status ?? 1);
+console.log(`promo ${out} ${(fs.statSync(out).size / 1048576).toFixed(1)} MiB`);
