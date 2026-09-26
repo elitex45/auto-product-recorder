@@ -210,6 +210,13 @@ render; components live in `studio/src/components/`.
 **License note:** Remotion is free for individuals and companies of up to 3
 people; bigger companies need a [company license](https://www.remotion.pro).
 
+### Films: one unbroken chain
+
+For a promo where every shot morphs into the next (no cuts), with lifted UI pieces, a synthesized
+music bed and word-synced moves, write a film composition instead of an `edit.json`. The full
+recipe, components, animation catalogue and checks are in
+[docs/film-playbook.md](docs/film-playbook.md). Render with `node studio/film.mjs demos/<name>`.
+
 ## Run one step at a time
 
 ```bash

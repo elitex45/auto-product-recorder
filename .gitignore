@@ -1,6 +1,7 @@
 node_modules/
 # studio: stage assets copied in per render
 studio/public/_demo/
+studio/public/_film/
 .venv/
 __pycache__/
 test-results/

@@ -3,6 +3,8 @@ import { Composition } from "remotion";
 import { Promo } from "./Promo";
 import { FPS, HEIGHT, WIDTH, totalFrames } from "./timing";
 import type { PromoProps } from "./types";
+import { DittoV3 } from "./films/DittoV3";
+import type { FilmProps } from "./film/types";
 
 // Defaults only matter in `npm run preview` before props are passed; renders get real props from polish.mjs.
 const empty: PromoProps = {
@@ -15,6 +17,7 @@ const empty: PromoProps = {
 };
 
 export const Root: React.FC = () => (
+  <>
   <Composition
     id="Promo"
     component={Promo}
@@ -27,4 +30,16 @@ export const Root: React.FC = () => (
       durationInFrames: totalFrames(props),
     })}
   />
+  {/* Hand-choreographed films, rendered by film.mjs from demos/<name>/film.json. */}
+  <Composition
+    id="DittoV3"
+    component={DittoV3}
+    width={WIDTH}
+    height={HEIGHT}
+    fps={FPS}
+    durationInFrames={1}
+    defaultProps={{} as FilmProps}
+    calculateMetadata={({ props }) => ({ durationInFrames: Math.round((props.frames ?? 1) * (props.pace ?? 1)) })}
+  />
+  </>
 );
