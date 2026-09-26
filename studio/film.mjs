@@ -52,14 +52,26 @@ const args = opt.still
   : ["render", "src/index.ts", film.composition, path.join(demo, film.output), ...(opt.frames ? [`--frames=${opt.frames}`] : [])];
 const r = spawnSync("npx", ["remotion", ...args, `--props=${propsFile}`, "--log=warn"], { cwd: STUDIO, stdio: "inherit" });
 if (r.status !== 0) process.exit(r.status ?? 1);
-// Bring the finished mix to web loudness (-14 LUFS, peaks under -1 dB); the picture is copied as is.
+// Finish: bake the poster in as frame 0 (so feeds and players that show the first frame show the
+// best one; the frame is replaced, not added, so timing and audio stay the same) and bring the mix to
+// web loudness (-14 LUFS, peaks under -1 dB). Also writes <output>.jpg and share-copy.txt.
 if (!opt.still && !opt.frames) {
   const { createRequire } = await import("node:module");
   const ffmpeg = createRequire(import.meta.url)(path.join(path.dirname(STUDIO), "node_modules", "@ffmpeg-installer", "ffmpeg")).path;
+  const run = (a) => {
+    const n = spawnSync(ffmpeg, ["-v", "error", "-y", ...a], { stdio: "inherit" });
+    if (n.status !== 0) process.exit(n.status ?? 1);
+  };
   const out = args[3];
   const tmp = out.replace(/\.mp4$/, ".loud.mp4");
-  const n = spawnSync(ffmpeg, ["-v", "error", "-y", "-i", out, "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-1:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "256k", tmp], { stdio: "inherit" });
-  if (n.status !== 0) process.exit(n.status ?? 1);
+  const poster = out.replace(/\.mp4$/, ".jpg");
+  // film.json "poster": the film frame to use (default: the last one).
+  const pf = Math.round((film.poster ?? film.frames - 1) * (film.pace ?? 1));
+  run(["-i", out, "-vf", `select=eq(n\\,${pf})`, "-frames:v", "1", "-q:v", "2", poster]);
+  run(["-i", out, "-i", poster, "-filter_complex", "[0:v][1:v]overlay=enable='eq(n,0)'[v]", "-map", "[v]", "-map", "0:a",
+    "-c:v", "libx264", "-crf", "16", "-preset", "medium", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+    "-af", "loudnorm=I=-14:TP=-1:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "256k", tmp]);
   fs.renameSync(tmp, out);
+  if (film.share) fs.writeFileSync(path.join(demo, "share-copy.txt"), film.share.trim() + "\n");
 }
 console.log(`done: ${args[3]}`);

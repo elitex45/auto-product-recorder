@@ -305,6 +305,12 @@ def main():
         x = fn()
         x = x * (10 ** (-3 / 20) / max(np.abs(x).max(), 1e-6))
         sf.write(out / "sfx" / f"{name}.wav", x, SR)
+    # Recorded Kenney one-shots (CC0) beat the synthesized click and pop; see assets/sfx/kenney/.
+    kenney = Path(__file__).resolve().parent.parent / "assets" / "sfx" / "kenney"
+    for name, file in {"click": "click2", "pop": "bong_001", "land": "impactSoft_medium_001"}.items():
+        x, sr = sf.read(kenney / f"{file}.ogg")
+        x = x * (10 ** (-3 / 20) / max(np.abs(x).max(), 1e-6))
+        sf.write(out / "sfx" / f"{name}.wav", x, sr)
     print(f"bed {len(bed) / SR:.1f}s -> {out / 'bed.wav'}; sfx -> {out / 'sfx'}")
 
 

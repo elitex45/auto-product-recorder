@@ -10,7 +10,25 @@ import type { Theme } from "../types";
 // circle -> card -> rows -> chips -> bar -> board -> phones -> words -> logo). Frames are absolute
 // (30 fps); spoken words are looked up from the aligner so moves land on the voice.
 
-type Ctx = { f: number; T: Theme; at: (id: string, word: string, nth?: number) => number; props: FilmProps };
+type Ctx = { f: number; g: number; T: Theme; at: (id: string, word: string, nth?: number) => number; props: FilmProps };
+
+// Holds: [scene frame, length]. The picture freezes on that scene frame for `length` frames so a
+// settled line stays up long enough to read (~0.3 s per word). Scenes are written in scene frames;
+// film.json (voice starts, total frames) and the music are in film frames, which include the holds.
+const HOLDS: [number, number][] = [
+  [418, 30], // "Top 600 traders get paid." (was 0.8 s settled, needs 1.5 s)
+  [838, 30], // "Trade on Ditto. Climb the board. Get paid." (was 1.5 s, needs 2.4 s)
+];
+const toScene = (g: number) => {
+  let off = 0;
+  for (const [a, len] of HOLDS) {
+    if (g < a + off) break;
+    if (g < a + off + len) return a;
+    off += len;
+  }
+  return g - off;
+};
+const toFilm = (f: number) => f + HOLDS.reduce((o, [a, len]) => (a < f ? o + len : o), 0);
 
 const DISPLAY = "Display, Inter, sans-serif";
 const BODY = "Body, Inter, sans-serif";
@@ -653,7 +671,7 @@ function s9(c: Ctx) {
 }
 
 // ---------- S10 + S11: closing line with the Ditto mark as text cursor; the mark becomes the logo (f740-990) ----------
-function s10({ f, T, at, props }: Ctx) {
+function s10({ f, g, T, at, props }: Ctx) {
   if (f < 740) return null;
   const words: LineWord[] = [
     { text: "Trade", at: at("v8", "Trade") },
@@ -679,7 +697,7 @@ function s10({ f, T, at, props }: Ctx) {
   const mx = lerp(cur.x, logo.x, easeInOut(seg(f, END, END + 16)));
   const my = lerp(cur.y, logo.y, easeInOut(seg(f, END, END + 16)));
   const ms = lerp(cur.size, logo.size, grow);
-  const blink = f < END ? 0.75 + 0.25 * Math.cos(f * 0.35) : 1;
+  const blink = f < END ? 0.75 + 0.25 * Math.cos(g * 0.35) : 1;
   const flash = f >= END + 4 ? 1 - seg(f, END + 4, END + 18) : 0;
   const hero = seg(f, END + 2, END + 20);
   const push = lerp(1, 1.06, seg(f, END, 990));
@@ -725,13 +743,14 @@ const SFX: [string, number][] = [
   ["pop", CLICK1 + 3],
   ["sparkle", 186],
   ["chime", 196],
-  ["pop", 244],
+  ["land", 244],
 ];
 
 export const DittoV3: React.FC<FilmProps> = (props) => {
   // Scenes are written in choreography frames; `pace` stretches them into output frames.
   const pace = props.pace ?? 1;
-  const f = useCurrentFrame() / pace;
+  const g = useCurrentFrame() / pace;
+  const f = toScene(g);
   const T = props.theme;
   const ready = useFilmFonts(T);
   const at = (id: string, word: string, nth = 0) => {
@@ -739,9 +758,9 @@ export const DittoV3: React.FC<FilmProps> = (props) => {
     const hits = v.words.filter((w) => w.w.toLowerCase() === word.toLowerCase());
     if (!hits[nth]) throw new Error(`${id}: no word "${word}"`);
     // The voice plays at natural speed, so its words land t0 seconds after its (stretched) start.
-    return v.at + (hits[nth].t0 * 30) / pace;
+    return toScene(v.at + (hits[nth].t0 * 30) / pace);
   };
-  const c: Ctx = { f, T, at, props };
+  const c: Ctx = { f, g, T, at, props };
   return (
     <ShotsCtx.Provider value={props.shots}>
       <AbsoluteFill style={{ background: T.bg, overflow: "hidden" }}>
@@ -767,7 +786,7 @@ export const DittoV3: React.FC<FilmProps> = (props) => {
           </Sequence>
         ))}
         {SFX.map(([name, fr], i) => (
-          <Sequence key={i} from={Math.round(fr * pace)} durationInFrames={90}>
+          <Sequence key={i} from={Math.round(toFilm(fr) * pace)} durationInFrames={90}>
             <Audio src={staticFile(props.music.sfx[name])} volume={0.5} />
           </Sequence>
         ))}

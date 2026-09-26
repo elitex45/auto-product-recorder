@@ -10,6 +10,33 @@ music bed under it and sound effects on the moves. Loudness is -14 LUFS.
 
 ---
 
+## 0. Starting from a reference video
+
+When the user hands over a video they like ("make ours feel like this"), dissect it before any
+code. The worked example is `docs/reference-dissection-example.md` (the LangEase promo that this
+whole style came from). Steps, all with the bundled ffmpeg and the repo's `.venv`:
+
+1. **Facts:** `ffmpeg -i ref.mp4` for length, size, fps, audio.
+2. **Frames:** contact sheets at 5 fps for the whole video (`fps=5,scale=384:-1,tile=4x4`), then
+   10 fps bursts around every moment where something changes shape. Look at every sheet.
+3. **Cuts:** `select=gt(scene\,0.25),showinfo` → count. 0 means it is one chain (this style).
+4. **Timeline:** write it chunk by chunk (`C1 · 0.0–1.1 s · ...`): what is shown, how it moves
+   (with times), and *why* it works.
+5. **Technique catalogue:** one row per technique (de-blur words, morph, match move, lift, whip,
+   speed blur, ...), with where it appears. Then mark each one "have / missing" in our studio.
+   This list is what you build.
+6. **Audio:** extract it (`-vn -ac 2 -ar 44100 ref.wav`). Per-second RMS, onset strength and an
+   autocorrelation tempo in numpy give the BPM (check for half-time: Ditto's said 58.7, the real
+   pulse was ~120), the drops and the big hit. Note which visual events land on beats.
+7. **Translate to our product:** keep the *structure* (the chain, the lifted pieces, the beat
+   grid, the end card), not the content. Then write the chain table (§3) for our script.
+
+Do **not** reuse the reference's music: we tried it for Ditto (v4: stretched to our pace, one bar
+repeated so the hit met our logo) and it was rejected. Use `scripts/music.py` at the reference's
+tempo instead, with the same shape (intro, main, a drop before the logo, the hit on the logo).
+
+---
+
 ## 1. The style in one paragraph
 
 The style comes from dissecting a pro SaaS edit that scored 1 of 40 techniques against our old
@@ -47,10 +74,13 @@ demos/<name>/
   audio/<id>.wav        voice clips (Kokoro); audio/index.json = clip lengths (ms)
   audio/words/<id>.json aligned word times (seconds from clip start)
   music/bed.wav         synthesized bed, ducked under the voice
-  music/sfx/*.wav       one-shots: whoosh click pop chime sparkle swell impact
+  music/sfx/*.wav       one-shots: whoosh chime sparkle swell impact (synth), click pop land (Kenney)
+  <output>.jpg          poster (also baked in as frame 0); share-copy.txt = film.json "share"
 
 scripts/music.py              music bed + SFX synthesizer (numpy/scipy, no licences)
-studio/film.mjs               builds props, renders a film composition, loudness-normalizes
+assets/sfx/kenney/            recorded one-shots from Kenney (CC0), see its README
+studio/film.mjs               builds props, renders a film composition, bakes the poster into frame 0,
+                              loudness-normalizes, writes share-copy.txt
 studio/src/film/anim.ts       easing, keyframes, speed blur, seeded random, text measure
 studio/src/film/parts.tsx     Plane, Pic, Hand, Ring, Confetti, Mark, wordLine, font loader
 studio/src/film/types.ts      FilmProps / Shot
@@ -203,8 +233,23 @@ test.afterAll(() => /* merge index into shots/shots.json */);
 - **Music follows pace:** `scripts/music.py` plays `bpm` at `bpm / pace` and places the ducking
   at `frame * pace`, so a move that sat on a beat at pace 1 still sits on one. Written at 120 BPM
   (1 beat = 15 frames, 1 bar = 60 frames). At pace 1.25 it plays at 96 BPM.
-- The music's **impact** is on the first `end` bar (bar 14 = 28 s × pace). The logo lands there
-  (S11 at film frame 838–842). If you move the logo, move the bars.
+- **Reading time (hard rule, from latent-spaces/brag):** once a line is fully on screen and
+  settled, it stays up at least **0.3 s per word** (a 1–2 word label: 0.8 s). "Settled" starts
+  when the last word finishes its 9-frame de-blur, and ends when the fade-out starts. Count it in
+  *output* seconds: `(fadeStart - (lastWord + 9)) * pace / 30`. Check every word line with this
+  before rendering. On Ditto, two lines failed it at pace 1.25:
+  "Top 600 traders get paid." had 0.8 s (needs 1.5), the closing line had 1.5 s (needs 2.4).
+- **Holds** fix a short line without touching the choreography. `HOLDS` in the film file is a list
+  of `[scene frame, length]`: the picture freezes on that scene frame for `length` frames (the
+  Background keeps drifting, so it never looks dead). Scene code keeps its old numbers; the
+  mapping is `toScene(filmFrame)`, and `at()` and the SFX list go through it. What does move:
+  film.json `frames` (+ total hold length) and every voice start after a hold (+ the holds before
+  it). Make holds a multiple of 15 frames (one beat) and add whole `main` bars so the music's
+  `end` still lands on the logo. Ditto: holds `[418, 30]` and `[838, 30]`, frames 990 → 1050,
+  v5–v8 +30, one extra `main` bar.
+- The music's **impact** is on the first `end` bar (bar 15 = 30 s × pace, since the extra bar).
+  The logo lands there (scene frame 838 + 60 of holds = film frame 898). If you move the logo,
+  move the bars.
 
 ---
 
@@ -228,10 +273,21 @@ Everything is synthesized, so there is no licensing and no external service. fil
 - **Ducking:** the whole bed dips to `duck` under every voice clip, with a smooth ~60 ms
   envelope. **0.25** is right. 0.45 left the voice only ~6 dB above the music, which is too close.
 - SFX one-shots are written to `music/sfx/`. The film places them itself: whoosh on every big
-  move and flip, click on clicks, pop on results, sparkle on the confetti, chime on the check.
-  Volume is 0.5, bed volume is 0.55.
+  move and flip, click on clicks, pop on results, land when a card lands, sparkle on the
+  confetti, chime on the check. Volume is 0.5, bed volume is 0.55.
+- **click, pop and land are real recordings** from Kenney (CC0, free to use), copied to
+  `assets/sfx/kenney/` from brag's "safest picks": `ui/click2`, `interface/bong_001`,
+  `impact/impactSoft_medium_001`. Synthesized clicks sounded thin. `music.py` writes them over the
+  synthesized ones. Pick more from brag's `assets/sfx/sfx-analysis.md` (low high-frequency risk
+  for anything repeated).
 - The fixed RNG seed makes the same film.json always give the same track.
-- After rendering, `film.mjs` runs `loudnorm=I=-14:TP=-1:LRA=11` (audio only; video is copied).
+- After rendering, `film.mjs` runs `loudnorm=I=-14:TP=-1:LRA=11`, in the same ffmpeg pass as the
+  poster (below). AAC can overshoot the peak a little (Ditto: -0.6 dBFS); that is not clipping.
+- **Poster and share copy (from brag):** `film.mjs` grabs film.json `"poster"` (a film frame;
+  default the last one, the end card) as `<output>.jpg`, then overlays it on **frame 0** of the
+  mp4. The frame is replaced, not added, so length and audio sync do not change. Feeds and
+  players that show the first frame now show the end card. It writes film.json `"share"`
+  (1–3 sentences for the post) to `share-copy.txt`.
 
 ---
 
@@ -243,7 +299,9 @@ Everything is synthesized, so there is no licensing and no external service. fil
    pops, jumps, doubles and dead frames. (Run it in `bash -c`: zsh chokes on `$((…))` in these
    lines.)
 3. **Hard cuts**: `ffmpeg -i out.mp4 -vf "select=gt(scene\,0.3),showinfo" -f null - 2>&1 | grep -c pts_time` must print **0**.
-4. **Loudness**: `-af ebur128=peak=true` → about -14 LUFS, peak ≤ -1 dBFS.
+   Frame 0 → 1 is the poster swap; the scene filter does not count it.
+4. **Loudness**: `-af ebur128=peak=true` → about -14 LUFS, true peak under 0 dBFS (≈ -1).
+4b. **Reading time**: every word line settled ≥ 0.3 s per word (§6). Frame 0 equals the poster.
 5. **Voice over music**: compare the RMS of each voice clip with the bed under it. Aim for ≥ 10 dB.
 6. Watch it once at full speed. The user reviews only the video.
 
@@ -257,6 +315,7 @@ Bugs this loop caught on Ditto (look for them first next time):
 - The page blur jumped on the row lift. Fix: ramp the blur across the flatten.
 - The hero art's own mark sat behind the logo (a double logo). Fix: shift, blur and dim the hero.
 - The first cut was too fast. Fix: `pace: 1.25`.
+- Two lines were up too briefly to read (brag's 0.3 s/word rule). Fix: `HOLDS`.
 
 ---
 
@@ -283,10 +342,12 @@ Bugs this loop caught on Ditto (look for them first next time):
 2. `narration.json` → voice clips → align every clip.
 3. `shots.capture.ts`: page views plus every piece you will lift, at 2x/3x, with `expect`s.
 4. `film.json`: theme (accent, accent2, bg, ink, muted, fonts, logo, hero), `frames`,
-   `pace: 1.25`, voice start frames, music bars (put the `end` impact on the logo).
+   `pace: 1.25`, voice start frames, music bars (put the `end` impact on the logo), `share`,
+   optional `poster`.
 5. `scripts/music.py demos/<name>`.
 6. Copy `studio/src/films/DittoV3.tsx` to `studio/src/films/<Name>.tsx`, rewrite the scene
    functions (`s1`…`sN`) for the new chain, and register it in `Root.tsx`. Keep: the `Box` morph,
-   `Plane` + lift, `wordLine`, the `at()` word lookup, pace handling, and the SFX list.
+   `Plane` + lift, `wordLine`, the `at()` word lookup, pace handling, `HOLDS`, and the SFX list.
+   Check the reading time of every line (§6) and add holds where it fails.
 7. Render → verification loop (§8) → fix → render again, until it's clean.
 8. Hand over the mp4 path.
