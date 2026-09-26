@@ -178,6 +178,9 @@ ffmpeg -i demos/google/google-search-demo.mp4 -af volumedetect -vn -f null - 2>&
 - **Phone stage shows a tiny desktop page**: set a phone `userAgent` (see above).
 - **Blurry phone text**: use `deviceScaleFactor: 2`.
 - **No font found**: set `TITLE_FONT` / `BODY_FONT` to any `.ttf` file.
+- **Kokoro exits with `Error processing file '…/espeak-ng-data/phontab'`**:
+  seen when the repo sat in a deep temp folder. Clone it into a normal folder
+  (e.g. `~/code/auto-product-recorder`) and run `npm run setup` again.
 - **Use your own ffmpeg**: `FFMPEG=/path/to/ffmpeg`. It needs `libx264`, `aac`
   and `drawtext`.
 - **Disk**: frames take ~1 MB per second of recording. They live in
@@ -196,6 +199,10 @@ setup.sh               one-time install
 ```
 
 ## Credits
+
+Original demo recorder (Playwright + CDP screencast + ffmpeg method) by
+Akshay ([@starlord-defi](https://github.com/starlord-defi)). This repo makes it
+generic and swaps the macOS `say` voice for Kokoro.
 
 Voice: [Kokoro-82M](https://github.com/hexgrad/kokoro) by hexgrad (Apache-2.0).
 Browser automation: [Playwright](https://playwright.dev). Video: [ffmpeg](https://ffmpeg.org).
