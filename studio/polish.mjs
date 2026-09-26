@@ -42,7 +42,7 @@ for (const name of new Set(edit.scenes.filter((s) => s.type === "screen").map((s
   if (!video) throw new Error(`no stage video for "${name}" in ${build}; run: npm run demo -- ${path.relative(process.cwd(), demo)}`);
   if (!meta.viewport) throw new Error(`${name}/frames.json has no viewport; re-record with the current recorder`);
   fs.copyFileSync(path.join(build, video), path.join(pub, `${name}.mp4`));
-  stages[name] = { src: `_demo/${name}.mp4`, viewport: meta.viewport, marks: meta.marks ?? [], beats: meta.beats, total: meta.total };
+  stages[name] = { src: `_demo/${name}.mp4`, viewport: meta.viewport, marks: meta.marks ?? [], cuts: meta.cuts ?? [], beats: meta.beats, total: meta.total };
 }
 
 // Word timing for kinetic scenes comes from the forced aligner in aligner/: given the clip and

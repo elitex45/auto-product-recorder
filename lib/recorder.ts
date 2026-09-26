@@ -37,6 +37,7 @@ export class Recorder {
   private frames: number[] = [];
   private beats: { id: string; start: number; audio: number; end: number }[] = [];
   private marks: { id: string; t: number; box: { x: number; y: number; width: number; height: number } }[] = [];
+  private cuts: number[] = [];
   private viewport = { width: 0, height: 0, dpr: 1 };
   private audio = loadAudioIndex();
   readonly dir: string;
@@ -100,6 +101,14 @@ export class Recorder {
     this.marks.push({ id, t: Date.now() - this.t0, box });
   }
 
+  /**
+   * Note a hard cut: call right after an instant change, such as `jump()`. The studio hides it
+   * with a quick blur and restarts the camera from the whole page, so shots stay still.
+   */
+  cut() {
+    this.cuts.push(Date.now() - this.t0);
+  }
+
   async stop() {
     await hold(400);
     await this.cdp.send("Page.stopScreencast").catch(() => undefined);
@@ -110,6 +119,7 @@ export class Recorder {
         frames: this.frames,
         beats: this.beats,
         marks: this.marks,
+        cuts: this.cuts,
         viewport: this.viewport,
         total: Date.now() - this.t0,
       }),
@@ -121,6 +131,16 @@ export class Recorder {
 export async function settle(page: Page) {
   await page.waitForLoadState("domcontentloaded");
   await page.waitForLoadState("networkidle").catch(() => undefined);
+}
+
+/**
+ * Jump the page to `top` px at once and note the cut. Scrolling inside a recording looks choppy
+ * (the screencast only sends changed frames); a cut to a still page looks clean.
+ */
+export async function jump(page: Page, rec: Recorder, top: number) {
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), top);
+  rec.cut();
+  await hold(300);
 }
 
 /** Smooth-scroll the page to `top` px (visible in the video, unlike an instant jump). */

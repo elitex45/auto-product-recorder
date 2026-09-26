@@ -195,6 +195,12 @@ await page.locator("textarea[name=q]").click();
 await rec.mark("column", [headerCell, lastCell]);   // several locators: the box around all of them
 ```
 
+Scrolling looks choppy in a recording (the screencast only sends changed
+frames). For promos, cut instead: `await jump(page, rec, y)` jumps the page and
+notes a cut; the studio hides it with a quick blur, starts the shot wide and
+eases in to the next focus. On dark themes the window also gets a brand-colour
+glow and rim so it stands out from the background.
+
 Kinetic, stat and card scenes are timed to the words with the aligner
 (`aligner/`), so their text must use words the voice actually says.
 

@@ -48,6 +48,8 @@ export type Stage = {
   src: string;
   viewport: { width: number; height: number; dpr: number };
   marks: Mark[];
+  /** Hard cuts (ms since the stage started), from rec.cut(). */
+  cuts?: number[];
   beats: Beat[];
   total: number;
 };

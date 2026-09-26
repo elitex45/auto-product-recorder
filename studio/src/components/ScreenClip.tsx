@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  interpolate,
   OffthreadVideo,
   spring,
   staticFile,
@@ -58,11 +59,14 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
 
   // Camera keyframes: base view, then each focus, returning to base after `until`.
   const base: Cam = { z: 1, x: w / 2, y: h / 2 };
-  const keys: { at: number; cam: Cam }[] = [{ at: 0, cam: base }];
+  const keys: Key[] = [{ at: 0, cam: base }];
+  const cutFrames = (stage.cuts ?? []).map(frameOf).filter((c) => c > 0 && c < durationInFrames);
+  // A zoom belongs to the shot its mark is in: never start it before that shot's cut.
+  const shotStart = (frame: number) => Math.max(-Infinity, ...cutFrames.filter((c) => c <= frame).map((c) => c + 2));
   (scene.focus ?? []).forEach((fc) => {
     const m = fc.mark ? markById(fc.mark) : null;
     if (!m && fc.at === undefined) throw new Error(`edit.json: a focus in stage "${scene.stage}" needs a mark or an "at"`);
-    const at = fc.at !== undefined ? (fc.at - from) * fps : frameOf(m!.t) - (fc.lead ?? 0.5) * fps;
+    const at = fc.at !== undefined ? (fc.at - from) * fps : Math.max(frameOf(m!.t) - (fc.lead ?? 0.5) * fps, shotStart(frameOf(m!.t)));
     if (!m) {
       keys.push({ at, cam: base });
     } else {
@@ -75,7 +79,9 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
     }
     if (fc.until !== undefined) keys.push({ at: (fc.until - from) * fps, cam: base });
   });
-  keys.sort((a, b) => a.at - b.at);
+  // At each hard cut the camera snaps back to the whole page (hidden by the cut blur), then the next focus eases in.
+  cutFrames.forEach((at) => keys.push({ at, cam: base, snap: true }));
+  keys.sort((a, b) => a.at - b.at || (a.snap ? -1 : 0) - (b.snap ? -1 : 0));
   // A focus at the very start is where the camera begins, not a move into it.
   if (keys.length > 1 && keys[1].at <= 0) keys.shift();
   const focused = camAt(keys, f);
@@ -101,6 +107,9 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
   const float = `rotateX(${Math.sin(f / 50) * 0.8}deg) rotateY(${Math.cos(f / 60) * 0.8}deg)`;
   const entrance = entranceTransform(scene.entrance ?? "rise", spring({ frame: f, fps, config: { damping: 18, mass: 0.9 } }));
 
+  // Cut blur: the page flashes soft for a few frames around each cut, so a jump reads as a cut, not a glitch.
+  const cutBlur = Math.max(0, ...cutFrames.map((c) => interpolate(f, [c - 3, c + 1, c + 9], [0, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
+
   const dark = isDark(theme.bg);
   const frameStyle: React.CSSProperties = phone
     ? { borderRadius: 54, padding: 14, background: "#0d0f14", boxShadow: shadow(theme, dark) }
@@ -113,9 +122,11 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
           <Phrase text={scene.title} theme={theme} size={56} />
         </div>
       ) : null}
+      {dark ? <StageGlow w={w} h={h + (phone ? 0 : CHROME)} top={titleSpace} theme={theme} f={f} /> : null}
       <div
         style={{
           ...frameStyle,
+          ...(dark ? rim(theme, phone) : null),
           marginTop: titleSpace,
           transform: `${entrance} ${float}`,
         }}
@@ -129,6 +140,7 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
               top: 0,
               transformOrigin: "0 0",
               transform: `translate(${w / 2 - cam.x * cam.z}px, ${h / 2 - cam.y * cam.z}px) scale(${cam.z})`,
+              filter: cutBlur > 0.01 ? `blur(${cutBlur * 16}px) brightness(${1 + cutBlur * 0.25})` : undefined,
             }}
           >
             <div style={{ position: "relative", width: w, height: h, overflow: "hidden" }}>
@@ -157,13 +169,43 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
   );
 };
 
+type Key = { at: number; cam: Cam; snap?: boolean };
+
+/** Soft brand-colour light behind the window, so a dark product does not sink into a dark background. */
+const StageGlow: React.FC<{ w: number; h: number; top: number; theme: Theme; f: number }> = ({ w, h, top, theme, f }) => (
+  <div
+    style={{
+      position: "absolute",
+      width: w * 1.05,
+      height: h * 1.05,
+      marginTop: top,
+      borderRadius: 80,
+      background: `linear-gradient(120deg, ${theme.accent2}, ${theme.accent} 90%)`,
+      filter: "blur(110px)",
+      opacity: 0.42 + Math.sin(f / 40) * 0.05,
+    }}
+  />
+);
+
+/** A thin light edge around the window (a 1.5px gradient border) that catches the glow. */
+const rim = (theme: Theme, phone: boolean): React.CSSProperties => ({
+  border: "1.5px solid transparent",
+  backgroundImage: `linear-gradient(${phone ? "#0d0f14" : "#111018"}, ${phone ? "#0d0f14" : "#111018"}), linear-gradient(140deg, ${theme.accent2}, rgba(255,255,255,0.15) 45%, ${theme.accent})`,
+  backgroundOrigin: "border-box",
+  backgroundClip: "padding-box, border-box",
+});
+
 /**
  * Camera state at frame f. Each keyframe eases from wherever the camera was when it began;
  * a move cut short by the next keyframe hands over from its state at that moment.
  */
-function camAt(keys: { at: number; cam: Cam }[], f: number): Cam {
+function camAt(keys: Key[], f: number): Cam {
   let cur = keys[0].cam;
   for (let i = 1; i < keys.length && f >= keys[i].at; i++) {
+    if (keys[i].snap) {
+      cur = keys[i].cam;
+      continue;
+    }
     const stop = i + 1 < keys.length ? Math.min(f, keys[i + 1].at) : f;
     cur = mix(cur, keys[i].cam, ease(Math.min(1, (stop - keys[i].at) / MOVE)));
   }
