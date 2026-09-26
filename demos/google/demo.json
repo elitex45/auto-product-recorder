@@ -1,0 +1,14 @@
+{
+  "output": "google-search-demo.mp4",
+  "voice": "af_heart",
+  "speed": 1.0,
+  "background": "0x0b0a14",
+  "sequence": [
+    { "card": "t0", "title": "How Google search works", "subtitle": "Recorded by auto-product-recorder · voice by Kokoro" },
+    { "card": "t1", "title": "1 · On a laptop", "subtitle": "Type a question, see suggestions" },
+    { "stage": "desktop" },
+    { "card": "t2", "title": "2 · On a phone", "subtitle": "Same search, 390 x 844" },
+    { "stage": "mobile" },
+    { "card": "t9", "title": "Start typing. Google finishes the thought.", "subtitle": "That is the whole flow." }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "t0": "This is a quick look at how Google search works. A script did all the clicking, and Kokoro is doing the talking.",
+  "t1": "Part one. Searching on a laptop.",
+  "t2": "Part two. The same search on a phone.",
+  "t9": "That's Google search. Start typing, and it helps you finish the question.",
+
+  "d1": "Here's the Google home page. There's the logo, and one search box in the middle.",
+  "d2": "Click the box and start typing a question. Let's ask how rainbows form.",
+  "d3": "While you type, Google guesses what you mean, and shows a list of suggestions right under the box.",
+  "d4": "Move down the list, and pick the one that matches your question.",
+
+  "m1": "On a phone, it's the same page. The search box sits right at the top.",
+  "m2": "Tap it and type, and the suggestions fill the screen, ready to tap."
+}

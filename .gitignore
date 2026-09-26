@@ -1,0 +1,14 @@
+node_modules/
+.venv/
+__pycache__/
+test-results/
+playwright-report/
+# per-demo outputs (reproducible, large)
+demos/*/audio/
+demos/*/frames/
+demos/*/build/
+demos/*/*.mp4
+# local notes
+sessions/
+_original/
+.DS_Store

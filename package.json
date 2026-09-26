@@ -1,0 +1,20 @@
+{
+  "name": "auto-product-recorder",
+  "version": "1.0.0",
+  "description": "Record a narrated product demo video of any web app: Playwright drives the app, Kokoro speaks the voice-over, ffmpeg stitches it.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "setup": "bash setup.sh",
+    "demo": "node scripts/run.mjs",
+    "voice": "node scripts/run.mjs --step voice",
+    "record": "node scripts/run.mjs --step record",
+    "assemble": "node scripts/run.mjs --step assemble"
+  },
+  "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0"
+  },
+  "license": "MIT"
+}

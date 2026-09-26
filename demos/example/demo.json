@@ -1,0 +1,14 @@
+{
+  "output": "example-demo.mp4",
+  "voice": "af_heart",
+  "speed": 1.0,
+  "background": "0x0b0a14",
+  "sequence": [
+    { "card": "t0", "title": "A tour of playwright.dev", "subtitle": "Recorded by auto-product-recorder · voice by Kokoro" },
+    { "card": "t1", "title": "1 · On a laptop", "subtitle": "Home page and the install guide" },
+    { "stage": "desktop" },
+    { "card": "t2", "title": "2 · On a phone", "subtitle": "Same site, 390 x 844" },
+    { "stage": "mobile" },
+    { "card": "t9", "title": "Write the words. Script the clicks.", "subtitle": "Get a finished video." }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "t0": "This is a short tour of the Playwright website. It was recorded by a script, and the voice you're hearing was made by Kokoro.",
+  "t1": "Part one. The site on a laptop.",
+  "t2": "Part two. The same site on a phone.",
+  "t9": "That's it. Write the words, script the clicks, and you get a finished video.",
+
+  "d1": "Here's the home page. A big headline, and a Get started button right up front.",
+  "d2": "Scroll down and you see what it can do, one section at a time.",
+  "d3": "Let's go back up and click Get started.",
+  "d4": "And we land on the install guide. Everything you need to begin is on this one page.",
+
+  "m1": "On a phone, the same page stacks into one column. Nothing is cut off.",
+  "m2": "Open the menu, and every section is one tap away."
+}
