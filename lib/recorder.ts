@@ -84,10 +84,19 @@ export class Recorder {
   /**
    * Remember where `target` is on screen right now (CSS px, relative to the viewport).
    * The studio zooms to marks and moves its cursor to them. Call it just before a click.
+   * Pass several locators to mark the box around all of them (e.g. a table column).
    */
-  async mark(id: string, target: Locator) {
-    const box = await target.boundingBox();
-    if (!box) throw new Error(`mark "${id}": element is not visible`);
+  async mark(id: string, target: Locator | Locator[]) {
+    const boxes = await Promise.all((Array.isArray(target) ? target : [target]).map((l) => l.boundingBox()));
+    if (!boxes.length || boxes.some((b) => !b)) throw new Error(`mark "${id}": element is not visible`);
+    const x = Math.min(...boxes.map((b) => b!.x));
+    const y = Math.min(...boxes.map((b) => b!.y));
+    const box = {
+      x,
+      y,
+      width: Math.max(...boxes.map((b) => b!.x + b!.width)) - x,
+      height: Math.max(...boxes.map((b) => b!.y + b!.height)) - y,
+    };
     this.marks.push({ id, t: Date.now() - this.t0, box });
   }
 

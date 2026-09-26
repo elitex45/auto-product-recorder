@@ -167,7 +167,24 @@ The storyboard is `demos/<name>/edit.json`:
 |---|---|
 | `kinetic` | `phrases` one after another, over voice clip `vo`. Each word appears the moment it is spoken, so phrases must use the clip's words, in order |
 | `screen` | recorded `stage` (optionally `from`/`to` seconds) in a floating window. `focus` zooms to marks, `clicks` draws the cursor clicking them |
-| `outro` | brand mark, `theme.brand` and `theme.url` |
+| `stat` | a big number (`value`, `prefix`, `suffix`) counting up while voice `vo` says it, `label` under it |
+| `cards` | `cards` (`title`, `sub`) that flip in one by one, each on its spoken `cue` word in voice `vo` |
+| `outro` | `theme.logo` (or a sparkle), `theme.brand` and `theme.url`, over `theme.hero` art if set |
+
+Every scene takes `enter` and `exit`: `blur` (default), `fade`, `zoomIn`,
+`zoomOut`, `slideUp`, `slideLeft`, `none`. Mix them so cuts don't all look alike.
+
+Screen scenes also take:
+
+- `entrance`: how the window arrives: `rise` (default), `pop`, `swing` (good for phones), `none`.
+- `focus`: `{ mark, scale, lead }` zooms to a mark; `{ at }` with no mark pulls back to the
+  whole page. A focus at the scene's start is where the camera begins, so
+  `[{ "mark": "title", "at": 0, "scale": 2.3 }, { "at": 1.6 }]` opens close and zooms out.
+- `highlights`: `{ mark, at?, for?, label? }` draws a glowing outline (and a label) for `for` seconds (default 2.5).
+
+Brand it with `theme`: colours, plus optional files from the demo folder:
+`displayFont` and `bodyFont` (.woff2/.ttf), `logo`, `hero` (key art behind the outro).
+On a dark `bg`, windows get dark chrome automatically.
 
 Zooms and clicks need to know where things were, so mark them in the spec
 right before the action:
@@ -175,7 +192,11 @@ right before the action:
 ```ts
 await rec.mark("search-box", page.locator("textarea[name=q]"));
 await page.locator("textarea[name=q]").click();
+await rec.mark("column", [headerCell, lastCell]);   // several locators: the box around all of them
 ```
+
+Kinetic, stat and card scenes are timed to the words with the aligner
+(`aligner/`), so their text must use words the voice actually says.
 
 `cd studio && npm run preview` opens Remotion's editor to scrub through a
 render; components live in `studio/src/components/`.

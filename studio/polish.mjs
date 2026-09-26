@@ -23,6 +23,17 @@ const pub = path.join(STUDIO, "public", "_demo");
 fs.rmSync(pub, { recursive: true, force: true });
 fs.mkdirSync(path.join(pub, "audio"), { recursive: true });
 
+// Theme files (fonts, logo, key art) are paths in the demo folder; serve them from public/.
+for (const key of ["displayFont", "bodyFont", "logo", "hero"]) {
+  const rel = edit.theme[key];
+  if (!rel) continue;
+  const file = path.join(demo, rel);
+  if (!fs.existsSync(file)) throw new Error(`edit.json theme.${key}: ${file} not found`);
+  fs.mkdirSync(path.join(pub, "assets"), { recursive: true });
+  fs.copyFileSync(file, path.join(pub, "assets", path.basename(file)));
+  edit.theme[key] = `_demo/assets/${path.basename(file)}`;
+}
+
 const stages = {};
 for (const name of new Set(edit.scenes.filter((s) => s.type === "screen").map((s) => s.stage))) {
   const meta = readJson(path.join(demo, "frames", name, "frames.json"));
@@ -73,7 +84,7 @@ for (const scene of edit.scenes.filter((s) => s.vo)) {
   const wav = path.join(demo, "audio", `${id}.wav`);
   fs.copyFileSync(wav, path.join(pub, "audio", `${id}.wav`));
   vo[id] = { src: `_demo/audio/${id}.wav`, ms: index[id] };
-  if (scene.type !== "kinetic") continue;
+  if (!["kinetic", "stat", "cards"].includes(scene.type)) continue;
   vo[id].words = align(id, wav);
 }
 

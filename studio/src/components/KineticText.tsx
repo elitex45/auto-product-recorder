@@ -72,7 +72,12 @@ export function spokenFrames(phrases: string[], words: SpokenWord[], fps: number
  * it is spoken and each phrase holds until the next one starts; without it, phrases share the
  * scene evenly.
  */
-export const KineticText: React.FC<{ phrases: string[]; words?: SpokenWord[]; theme: Theme }> = ({ phrases, words, theme }) => {
+export const KineticText: React.FC<{ phrases: string[]; words?: SpokenWord[]; theme: Theme; size?: number }> = ({
+  phrases,
+  words,
+  theme,
+  size,
+}) => {
   const { durationInFrames: d, fps } = useVideoConfig();
   const timed = words ? spokenFrames(phrases, words, fps) : null;
   const even = Math.floor(d / phrases.length);
@@ -84,7 +89,7 @@ export const KineticText: React.FC<{ phrases: string[]; words?: SpokenWord[]; th
         const end = last ? d : starts[i + 1];
         return (
           <Sequence key={i} from={starts[i]} durationInFrames={Math.max(1, end - starts[i])}>
-            <PhraseSlot text={text} theme={theme} fadeOut={!last} at={timed ? timed[i].map((t) => t - LEAD - starts[i]) : undefined} />
+            <PhraseSlot text={text} theme={theme} size={size} fadeOut={!last} at={timed ? timed[i].map((t) => t - LEAD - starts[i]) : undefined} />
           </Sequence>
         );
       })}
@@ -93,14 +98,20 @@ export const KineticText: React.FC<{ phrases: string[]; words?: SpokenWord[]; th
 };
 
 /** Centres a phrase; all but the last blur out over their final 6 frames. */
-const PhraseSlot: React.FC<{ text: string; theme: Theme; fadeOut: boolean; at?: number[] }> = ({ text, theme, fadeOut, at }) => {
+const PhraseSlot: React.FC<{ text: string; theme: Theme; size?: number; fadeOut: boolean; at?: number[] }> = ({
+  text,
+  theme,
+  size,
+  fadeOut,
+  at,
+}) => {
   const f = useCurrentFrame();
   const { durationInFrames: d } = useVideoConfig();
   const out = fadeOut ? interpolate(f, [d - 6, d], [1, 0], clamp) : 1;
   return (
     <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
       <div style={{ opacity: out, filter: `blur(${(1 - out) * 12}px)` }}>
-        <Phrase text={text} theme={theme} at={at} />
+        <Phrase text={text} theme={theme} size={size} at={at} />
       </div>
     </AbsoluteFill>
   );

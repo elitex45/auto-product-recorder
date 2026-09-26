@@ -31,6 +31,8 @@ export function sceneFrames(scene: Scene, props: PromoProps): number {
   const voSec = (id?: string) => (id && props.vo[id] ? props.vo[id].ms / 1000 : 0);
   switch (scene.type) {
     case "kinetic":
+    case "stat":
+    case "cards":
       return sec(scene.seconds ?? voSec(scene.vo) + 0.6);
     case "screen": {
       const { from, to } = screenRange(scene, props);

@@ -3,7 +3,6 @@ import {
   AbsoluteFill,
   Easing,
   OffthreadVideo,
-  interpolate,
   spring,
   staticFile,
   useCurrentFrame,
@@ -12,6 +11,7 @@ import {
 import type { Mark, ScreenScene, Stage, Theme } from "../types";
 import { WIDTH, HEIGHT } from "../timing";
 import { Cursor, type Click } from "./Cursor";
+import { Highlight } from "./Highlight";
 import { Phrase } from "./KineticText";
 
 const CHROME = 46; // browser toolbar height on desktop windows
@@ -60,16 +60,24 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
   const base: Cam = { z: 1, x: w / 2, y: h / 2 };
   const keys: { at: number; cam: Cam }[] = [{ at: 0, cam: base }];
   (scene.focus ?? []).forEach((fc) => {
-    const m = markById(fc.mark);
-    const z = fc.scale ?? 1.6;
-    const cx = (m.box.x + m.box.width / 2) * css;
-    const cy = (m.box.y + m.box.height / 2) * css;
-    // Keep the zoomed view inside the page.
-    const clampTo = (v: number, size: number) => Math.min(Math.max(v, size / (2 * z)), size - size / (2 * z));
-    keys.push({ at: frameOf(m.t) - (fc.lead ?? 0.5) * fps, cam: { z, x: clampTo(cx, w), y: clampTo(cy, h) } });
+    const m = fc.mark ? markById(fc.mark) : null;
+    if (!m && fc.at === undefined) throw new Error(`edit.json: a focus in stage "${scene.stage}" needs a mark or an "at"`);
+    const at = fc.at !== undefined ? (fc.at - from) * fps : frameOf(m!.t) - (fc.lead ?? 0.5) * fps;
+    if (!m) {
+      keys.push({ at, cam: base });
+    } else {
+      const z = fc.scale ?? 1.6;
+      const cx = (m.box.x + m.box.width / 2) * css;
+      const cy = (m.box.y + m.box.height / 2) * css;
+      // Keep the zoomed view inside the page.
+      const clampTo = (v: number, size: number) => Math.min(Math.max(v, size / (2 * z)), size - size / (2 * z));
+      keys.push({ at, cam: { z, x: clampTo(cx, w), y: clampTo(cy, h) } });
+    }
     if (fc.until !== undefined) keys.push({ at: (fc.until - from) * fps, cam: base });
   });
   keys.sort((a, b) => a.at - b.at);
+  // A focus at the very start is where the camera begins, not a move into it.
+  if (keys.length > 1 && keys[1].at <= 0) keys.shift();
   const focused = camAt(keys, f);
   const cam = { ...focused, z: focused.z * (1 + (PUSH * f) / durationInFrames) };
 
@@ -79,15 +87,24 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
     return { at: frameOf(m.t), x: (m.box.x + Math.min(m.box.width / 2, 60)) * css, y: (m.box.y + m.box.height / 2) * css };
   });
 
-  // Entrance: the window rises and un-tilts; then it floats very slightly.
-  const rise = spring({ frame: f, fps, config: { damping: 18, mass: 0.9 } });
-  const rotX = interpolate(rise, [0, 1], [22, 0]) + Math.sin(f / 50) * 0.8;
-  const rotY = interpolate(rise, [0, 1], [-10, 0]) + Math.cos(f / 60) * 0.8;
-  const lift = interpolate(rise, [0, 1], [120, 0]);
+  const glows = (scene.highlights ?? []).map((hl) => {
+    const m = markById(hl.mark);
+    return {
+      at: hl.at !== undefined ? (hl.at - from) * fps : frameOf(m.t),
+      length: (hl.for ?? 2.5) * fps,
+      box: { x: m.box.x * css, y: m.box.y * css, w: m.box.width * css, h: m.box.height * css },
+      label: hl.label,
+    };
+  });
 
+  // Entrance, then a very slight float.
+  const float = `rotateX(${Math.sin(f / 50) * 0.8}deg) rotateY(${Math.cos(f / 60) * 0.8}deg)`;
+  const entrance = entranceTransform(scene.entrance ?? "rise", spring({ frame: f, fps, config: { damping: 18, mass: 0.9 } }));
+
+  const dark = isDark(theme.bg);
   const frameStyle: React.CSSProperties = phone
-    ? { borderRadius: 54, padding: 14, background: "#0d0f14", boxShadow: shadow(theme) }
-    : { borderRadius: 18, overflow: "hidden", background: "#fff", boxShadow: shadow(theme) };
+    ? { borderRadius: 54, padding: 14, background: "#0d0f14", boxShadow: shadow(theme, dark) }
+    : { borderRadius: 18, overflow: "hidden", background: dark ? "#111018" : "#fff", boxShadow: shadow(theme, dark) };
 
   return (
     <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", perspective: 2400 }}>
@@ -100,10 +117,10 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
         style={{
           ...frameStyle,
           marginTop: titleSpace,
-          transform: `translateY(${lift}px) rotateX(${rotX}deg) rotateY(${rotY}deg)`,
+          transform: `${entrance} ${float}`,
         }}
       >
-        {phone ? null : <BrowserBar width={w} />}
+        {phone ? null : <BrowserBar width={w} dark={dark} />}
         <div style={{ position: "relative", width: w, height: h, overflow: "hidden", borderRadius: phone ? 42 : 0 }}>
           <div
             style={{
@@ -129,6 +146,9 @@ export const ScreenClip: React.FC<{ scene: ScreenScene; stage: Stage; from: numb
                 }}
               />
             </div>
+            {glows.map((g, i) => (
+              <Highlight key={i} box={g.box} at={g.at} length={g.length} label={g.label} zoom={cam.z} theme={theme} />
+            ))}
             <Cursor clicks={clicks} zoom={cam.z} touch={phone} theme={theme} start={{ x: w * 0.78, y: h * 1.05 }} />
           </div>
         </div>
@@ -156,10 +176,35 @@ const mix = (a: Cam, b: Cam, p: number): Cam => ({
   y: a.y + (b.y - a.y) * p,
 });
 
-const shadow = (theme: Theme) =>
-  `0 60px 120px -30px ${theme.accent}40, 0 30px 60px -30px rgba(10,20,40,0.35), 0 0 0 1px rgba(10,20,40,0.06)`;
+/** Window transform for an entrance that is `p` done (0..1, springy). */
+function entranceTransform(kind: NonNullable<ScreenScene["entrance"]>, p: number): string {
+  switch (kind) {
+    case "none":
+      return "";
+    case "pop":
+      return `scale(${0.7 + p * 0.3})`;
+    case "swing":
+      return `translateX(${(1 - p) * 500}px) rotateY(${(1 - p) * -70}deg) rotateZ(${(1 - p) * 8}deg)`;
+    case "rise":
+    default:
+      return `translateY(${(1 - p) * 120}px) rotateX(${(1 - p) * 22}deg) rotateY(${(1 - p) * -10}deg)`;
+  }
+}
 
-const BrowserBar: React.FC<{ width: number }> = ({ width }) => (
+/** Rough luminance check, so windows get dark chrome on dark themes. */
+function isDark(hex: string): boolean {
+  const n = parseInt(hex.replace("#", "").slice(0, 6), 16);
+  if (Number.isNaN(n)) return false;
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 90;
+}
+
+const shadow = (theme: Theme, dark: boolean) =>
+  dark
+    ? `0 60px 140px -30px ${theme.accent2}55, 0 0 0 1px rgba(255,255,255,0.08)`
+    : `0 60px 120px -30px ${theme.accent}40, 0 30px 60px -30px rgba(10,20,40,0.35), 0 0 0 1px rgba(10,20,40,0.06)`;
+
+const BrowserBar: React.FC<{ width: number; dark: boolean }> = ({ width, dark }) => (
   <div
     style={{
       width,
@@ -168,8 +213,8 @@ const BrowserBar: React.FC<{ width: number }> = ({ width }) => (
       alignItems: "center",
       gap: 9,
       padding: "0 18px",
-      background: "#f3f4f7",
-      borderBottom: "1px solid #e4e6eb",
+      background: dark ? "#16141f" : "#f3f4f7",
+      borderBottom: `1px solid ${dark ? "#262334" : "#e4e6eb"}`,
       boxSizing: "border-box",
     }}
   >
@@ -177,7 +222,7 @@ const BrowserBar: React.FC<{ width: number }> = ({ width }) => (
       <div key={c} style={{ width: 13, height: 13, borderRadius: 7, background: c }} />
     ))}
     <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-      <div style={{ width: Math.min(560, width * 0.4), height: 26, borderRadius: 8, background: "#e6e8ee" }} />
+      <div style={{ width: Math.min(560, width * 0.4), height: 26, borderRadius: 8, background: dark ? "#221f2e" : "#e6e8ee" }} />
     </div>
     <div style={{ width: 57 }} />
   </div>

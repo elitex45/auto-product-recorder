@@ -14,6 +14,24 @@ export type Theme = {
   brand: string;
   /** URL shown under the logo. */
   url?: string;
+  /** Headline font file (kinetic words, stats, cards, brand), from the demo folder. Default Inter. */
+  displayFont?: string;
+  /** Font file for small text (labels, captions). Default Inter. */
+  bodyFont?: string;
+  /** Logo image for the outro, from the demo folder. Default: a sparkle in the brand colours. */
+  logo?: string;
+  /** Key art behind the outro, from the demo folder. */
+  hero?: string;
+};
+
+/** How a scene arrives and leaves (see transitions.ts). */
+export type Transition = "blur" | "fade" | "zoomIn" | "zoomOut" | "slideUp" | "slideLeft" | "none";
+
+type SceneBase = {
+  /** Default "blur". */
+  enter?: Transition;
+  /** Default "blur". */
+  exit?: Transition;
 };
 
 /** One word of a voice clip and when it is spoken (seconds from the clip start). From the aligner. */
@@ -35,8 +53,10 @@ export type Stage = {
 };
 
 /** Big words on the background, phrase by phrase, over one voice clip. */
-export type KineticScene = {
+export type KineticScene = SceneBase & {
   type: "kinetic";
+  /** Font size in px. Default 120. */
+  size?: number;
   /**
    * Words from the voice clip, in spoken order (you may skip words).
    * Each word appears the moment it is spoken; each phrase replaces the previous one.
@@ -49,8 +69,13 @@ export type KineticScene = {
 };
 
 /** A slice of a recorded stage in a floating 3D window, with camera zooms and a cursor. */
-export type ScreenScene = {
+export type ScreenScene = SceneBase & {
   type: "screen";
+  /**
+   * How the window arrives: "rise" (tilted, from below; default), "pop" (scales up),
+   * "swing" (turns in from the side; good for phones), "none".
+   */
+  entrance?: "rise" | "pop" | "swing" | "none";
   stage: string;
   /** Seconds into the stage. Default 0. */
   from?: number;
@@ -58,20 +83,47 @@ export type ScreenScene = {
   to?: number;
   /** Small line above the window. */
   title?: string;
-  /** Camera moves: zoom to a mark, starting `lead` s before it happened, until the next focus. */
-  focus?: { mark: string; scale?: number; lead?: number; until?: number }[];
+  /**
+   * Camera moves, eased one into the next. Each zooms to `mark` (or back to the whole page if
+   * there is no mark), starting at `at` (s into the stage) or else `lead` s before the mark happened.
+   */
+  focus?: { mark?: string; at?: number; scale?: number; lead?: number; until?: number }[];
+  /**
+   * Glowing outlines drawn around marks, with an optional label. Shown from `at` (s into the stage;
+   * default when the mark happened) for `for` seconds (default 2.5), so they leave before the page scrolls on.
+   */
+  highlights?: { mark: string; at?: number; for?: number; label?: string }[];
   /** Marks the cursor moves to and clicks (or taps, on a phone). */
   clicks?: string[];
 };
 
 /** Closing logo and URL. */
-export type OutroScene = {
+/** One big number counting up while the voice says it, with a label under it. */
+export type StatScene = SceneBase & {
+  type: "stat";
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  label?: string;
+  vo?: string;
+  seconds?: number;
+};
+
+/** Cards that pop in one by one, each on the spoken word `cue`. */
+export type CardsScene = SceneBase & {
+  type: "cards";
+  cards: { cue: string; title: string; sub?: string }[];
+  vo?: string;
+  seconds?: number;
+};
+
+export type OutroScene = SceneBase & {
   type: "outro";
   vo?: string;
   seconds?: number;
 };
 
-export type Scene = KineticScene | ScreenScene | OutroScene;
+export type Scene = KineticScene | ScreenScene | StatScene | CardsScene | OutroScene;
 
 /** demos/<name>/edit.json */
 export type Edit = {
