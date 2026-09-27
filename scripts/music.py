@@ -283,9 +283,10 @@ def build(film: dict, demo: Path) -> np.ndarray:
     duck = lp(duck, 6, order=1)  # ~ 60 ms glide in and out
     mix = mix * duck
 
-    # Fade the last 2.5 s, master to -1 dBFS peak, stereo with a touch of width on the keys.
+    # Fade the last 2.5 s (music.fade), master to -1 dBFS peak, stereo with a touch of width on the keys.
     t = np.arange(n) / SR
-    mix *= np.clip((total - t) / 2.5, 0, 1) ** 1.5
+    fade = m.get("fade", 2.5)  # a short film (a 15 s reel) wants a short tail
+    mix *= np.clip((total - t) / fade, 0, 1) ** 1.5
     mix = np.tanh(mix * 1.2) / np.tanh(1.2)
     mix *= 10 ** (-1 / 20) / max(np.abs(mix).max(), 1e-6)
     width = lp(keys * pump * duck, 3000) * 0.08

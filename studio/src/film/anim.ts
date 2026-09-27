@@ -64,3 +64,16 @@ export function measure(text: string, font: string): number {
   ctx.font = font;
   return ctx.measureText(text).width;
 }
+
+/** Frames per beat at 30 fps and 120 bpm. Cut and hit on multiples of it and the film feels on the music. */
+export const BEAT = 15;
+/** 1 on every beat from frame `from`, decaying fast: scale or brightness kicks that follow the music. */
+export const beatPulse = (f: number, from = 0, beat = BEAT) => (f < from ? 0 : Math.exp(-((f - from) % beat) / 3.5));
+/** A dropped object bouncing to rest (three bounces), for landings. */
+export const bounceOut = (p: number) => {
+  const n = 7.5625, d = 2.75;
+  if (p < 1 / d) return n * p * p;
+  if (p < 2 / d) return n * (p -= 1.5 / d) * p + 0.75;
+  if (p < 2.5 / d) return n * (p -= 2.25 / d) * p + 0.9375;
+  return n * (p -= 2.625 / d) * p + 0.984375;
+};

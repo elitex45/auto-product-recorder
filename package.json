@@ -10,7 +10,10 @@
     "voice": "node scripts/run.mjs --step voice",
     "record": "node scripts/run.mjs --step record",
     "assemble": "node scripts/run.mjs --step assemble",
-    "polish": "node studio/polish.mjs"
+    "polish": "node studio/polish.mjs",
+    "new": "node scripts/new-video.mjs",
+    "film": "node studio/film.mjs",
+    "check": "bash scripts/check-video.sh"
   },
   "devDependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

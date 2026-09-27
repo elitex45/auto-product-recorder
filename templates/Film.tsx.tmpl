@@ -1,0 +1,85 @@
+import React from "react";
+import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
+import { backOut, beatPulse, BEAT, easeIn, easeOut, lerp, seg } from "../film/anim";
+import { CX, CY, ShotsCtx, useFilmFonts, W, wordLine } from "../film/parts";
+import type { FilmProps } from "../film/types";
+
+// __NAME__: made by scripts/new-video.mjs. Brief: demos/__DEMO__/brief.md.
+// Each scene is a function of the choreography frame `f` and returns null outside its range.
+// Replace s1/s2 with the scenes from the brief's shot list. Building blocks: docs/blocks.md.
+
+type Ctx = { f: number; T: FilmProps["theme"]; at: (id: string, word: string, nth?: number) => number; props: FilmProps };
+
+// Scene 1: a headline whose words land on the beat (or on spoken words: use c.at("v1", "word")).
+function s1({ f, T }: Ctx) {
+  if (f >= 150) return null;
+  const words = ["Your", "product,", "in", "motion."].map((text, i) => ({ text, at: i * BEAT, color: i === 3 ? T.accent : undefined }));
+  const out = easeIn(seg(f, 138, 150));
+  return (
+    <AbsoluteFill style={{ opacity: 1 - out, transform: `scale(${1 + 0.05 * beatPulse(f) - 0.1 * out})` }}>
+      {wordLine(f, words, `800 120px Display, Inter, sans-serif`, CX, CY - 70, T.ink).els}
+    </AbsoluteFill>
+  );
+}
+
+// Scene 2: the end card. The brand pops in on a beat and holds (it is also the poster frame).
+function s2({ f, T }: Ctx) {
+  if (f < 140) return null;
+  // Starts before scene 1 has gone, so no frame is empty; a slow push keeps the held card alive.
+  const pop = backOut(seg(f, 140, 154));
+  const sub = easeOut(seg(f, 156, 170));
+  return (
+    <AbsoluteFill style={{ transform: `scale(${1 + 0.05 * seg(f, 140, 210)})` }}>
+      <div style={{ position: "absolute", left: 0, width: W, top: CY - 90, textAlign: "center", font: `800 150px Display, Inter, sans-serif`, color: T.ink, transform: `scale(${pop})` }}>
+        {T.brand}
+      </div>
+      <div style={{ position: "absolute", left: CX - 160 * sub, width: 320 * sub, top: CY + 115, height: 6, background: T.accent }} />
+      <div style={{ position: "absolute", left: 0, width: W, top: CY + 140, textAlign: "center", font: `500 40px Body, Inter, sans-serif`, color: T.muted, opacity: sub, transform: `translateY(${lerp(20, 0, sub)}px)` }}>
+        {T.url ?? ""}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// [sfx name, choreography frame]. Names are files in music/sfx/ (scripts/music.py writes them).
+const SFX: [string, number][] = [
+  ["whoosh", 130],
+  ["pop", 140],
+];
+
+export const __NAME__: React.FC<FilmProps> = (props) => {
+  const pace = props.pace ?? 1;
+  const f = useCurrentFrame() / pace;
+  const T = props.theme;
+  const ready = useFilmFonts(T);
+  const at = (id: string, word: string, nth = 0) => {
+    const v = props.vo[id];
+    const hits = v.words.filter((w) => w.w.toLowerCase() === word.toLowerCase());
+    if (!hits[nth]) throw new Error(`${id}: no word "${word}"`);
+    return v.at + (hits[nth].t0 * 30) / pace;
+  };
+  const c: Ctx = { f, T, at, props };
+  return (
+    <ShotsCtx.Provider value={props.shots}>
+      <AbsoluteFill style={{ background: T.bg, overflow: "hidden" }}>
+        {ready && (
+          <>
+            {s1(c)}
+            {s2(c)}
+          </>
+        )}
+        <Audio src={staticFile(props.music.bed)} volume={0.55} />
+        {Object.entries(props.vo).map(([id, v]) => (
+          <Sequence key={id} from={Math.round(v.at * pace)} durationInFrames={Math.ceil((v.ms / 1000) * 30) + 6}>
+            <Audio src={staticFile(v.src)} />
+          </Sequence>
+        ))}
+        {SFX.map(([name, fr], i) => (
+          <Sequence key={i} from={Math.round(fr * pace)} durationInFrames={90}>
+            <Audio src={staticFile(props.music.sfx[name])} volume={0.5} />
+          </Sequence>
+        ))}
+      </AbsoluteFill>
+    </ShotsCtx.Provider>
+  );
+};

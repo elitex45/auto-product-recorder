@@ -9,6 +9,8 @@ import { DittoRiso } from "./films/DittoRiso";
 import { DittoRisoV2 } from "./films/DittoRisoV2";
 import { DittoRisoV3 } from "./films/DittoRisoV3";
 import { DittoRisoV4 } from "./films/DittoRisoV4";
+import { Showreel } from "./films/Showreel";
+import { HelloFilm } from "./films/HelloFilm";
 import type { FilmProps } from "./film/types";
 
 // Defaults only matter in `npm run preview` before props are passed; renders get real props from polish.mjs.
@@ -89,6 +91,26 @@ export const Root: React.FC = () => (
   <Composition
     id="DittoRisoV4"
     component={DittoRisoV4}
+    width={WIDTH}
+    height={HEIGHT}
+    fps={FPS}
+    durationInFrames={1}
+    defaultProps={{} as FilmProps}
+    calculateMetadata={({ props }) => ({ durationInFrames: Math.round((props.frames ?? 1) * (props.pace ?? 1)) })}
+  />
+  <Composition
+    id="Showreel"
+    component={Showreel}
+    width={WIDTH}
+    height={HEIGHT}
+    fps={FPS}
+    durationInFrames={1}
+    defaultProps={{} as FilmProps}
+    calculateMetadata={({ props }) => ({ durationInFrames: Math.round((props.frames ?? 1) * (props.pace ?? 1)) })}
+  />
+  <Composition
+    id="HelloFilm"
+    component={HelloFilm}
     width={WIDTH}
     height={HEIGHT}
     fps={FPS}

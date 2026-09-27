@@ -16,6 +16,18 @@ The tool does the rest:
 No screen-recording permission, no window on your screen, no API keys. Works
 on macOS and Linux.
 
+**Working with Claude Code?** Start at [CLAUDE.md](CLAUDE.md). It has the map, the rules, and the
+two skills that run the whole workflow (`.claude/skills/make-video`, `revise-video`): brief → story →
+assets → motion → sound → check → deliver. Craft notes are in [docs/craft.md](docs/craft.md), past
+mistakes in [docs/lessons.md](docs/lessons.md), reusable pieces in [docs/blocks.md](docs/blocks.md),
+and looks in [styles/](styles/README.md).
+
+```bash
+npm run new -- my-video                        # demos/my-video + a starter film, registered
+npm run film -- demos/my-video                 # render (poster on frame 0, -14 LUFS)
+npm run check -- demos/my-video/my-video.mp4   # numbers + frame sheets; then look at them
+```
+
 ```
 narration.json ─voice─▶ audio/<beat>.wav + audio/index.json (ms per beat)
                                   │
@@ -285,6 +297,14 @@ studio/                Remotion project: polish.mjs + reusable components
 aligner/               word timing for voice clips (forced alignment, runs in .venv)
 demos/example/         tour of playwright.dev (desktop + phone)
 demos/google/          Google search: home page, typing, suggestions
+demos/showreel/        15 s motion-design reel (film, night-reel style)
+demos/zaps-ditto-riso-v6/  product promo film in the riso style (latest)
+demos/hello-film/      the starter project that `npm run new` makes
+templates/             brief.md, starter project, starter film composition
+styles/                one folder per look
+scripts/new-video.mjs  new project or new version (never overwrites)
+scripts/align.sh       word timings for voice clips
+scripts/check-video.sh the check step: length, loudness, cuts, blank/frozen frames, sheets
 setup.sh               one-time install
 ```
 
