@@ -218,7 +218,8 @@ recipe, components, animation catalogue and checks are in
 [docs/film-playbook.md](docs/film-playbook.md). Render with `node studio/film.mjs demos/<name>`.
 
 For the ZAPS night-stock risograph look (five inks, grain, on twos, product screens in real
-colour), see [demos/zaps-ditto-riso-v4](demos/zaps-ditto-riso-v4/README.md).
+colour), see [demos/zaps-ditto-riso-v6](demos/zaps-ditto-riso-v6/README.md) (latest)
+and [demos/zaps-ditto-riso-v4](demos/zaps-ditto-riso-v4/README.md).
 
 ## Run one step at a time
 
