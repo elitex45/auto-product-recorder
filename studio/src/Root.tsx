@@ -4,6 +4,9 @@ import { Promo } from "./Promo";
 import { FPS, HEIGHT, WIDTH, totalFrames } from "./timing";
 import type { PromoProps } from "./types";
 import { DittoV3 } from "./films/DittoV3";
+import { DittoV5 } from "./films/DittoV5";
+import { DittoRiso } from "./films/DittoRiso";
+import { DittoRisoV2 } from "./films/DittoRisoV2";
 import type { FilmProps } from "./film/types";
 
 // Defaults only matter in `npm run preview` before props are passed; renders get real props from polish.mjs.
@@ -34,6 +37,36 @@ export const Root: React.FC = () => (
   <Composition
     id="DittoV3"
     component={DittoV3}
+    width={WIDTH}
+    height={HEIGHT}
+    fps={FPS}
+    durationInFrames={1}
+    defaultProps={{} as FilmProps}
+    calculateMetadata={({ props }) => ({ durationInFrames: Math.round((props.frames ?? 1) * (props.pace ?? 1)) })}
+  />
+  <Composition
+    id="DittoV5"
+    component={DittoV5}
+    width={WIDTH}
+    height={HEIGHT}
+    fps={FPS}
+    durationInFrames={1}
+    defaultProps={{} as FilmProps}
+    calculateMetadata={({ props }) => ({ durationInFrames: Math.round((props.frames ?? 1) * (props.pace ?? 1)) })}
+  />
+  <Composition
+    id="DittoRiso"
+    component={DittoRiso}
+    width={WIDTH}
+    height={HEIGHT}
+    fps={FPS}
+    durationInFrames={1}
+    defaultProps={{} as FilmProps}
+    calculateMetadata={({ props }) => ({ durationInFrames: Math.round((props.frames ?? 1) * (props.pace ?? 1)) })}
+  />
+  <Composition
+    id="DittoRisoV2"
+    component={DittoRisoV2}
     width={WIDTH}
     height={HEIGHT}
     fps={FPS}

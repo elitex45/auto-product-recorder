@@ -21,7 +21,7 @@ const copy = (from, to) => {
 };
 
 const theme = { ...film.theme };
-for (const key of ["displayFont", "bodyFont", "logo", "hero"]) if (theme[key]) theme[key] = copy(theme[key], theme[key]);
+for (const key of ["displayFont", "bodyFont", "logo", "hero", "partnerLogo"]) if (theme[key]) theme[key] = copy(theme[key], theme[key]);
 
 const shots = {};
 for (const [name, s] of Object.entries(readJson(path.join(demo, "shots", "shots.json")))) {

@@ -22,6 +22,8 @@ export type Theme = {
   logo?: string;
   /** Key art behind the outro, from the demo folder. */
   hero?: string;
+  /** Partner lockup shown next to the logo on the outro ("logo × partner"), from the demo folder. */
+  partnerLogo?: string;
 };
 
 /** How a scene arrives and leaves (see transitions.ts). */
